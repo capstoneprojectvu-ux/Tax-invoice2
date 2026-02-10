@@ -3,15 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Company, companies } from '@/data/mockData';
+import { Company } from '@/data/mockData';
 import { Building2, Search, AlertCircle, CheckCircle, Clock, IndianRupee } from 'lucide-react';
 
 interface GstLookupProps {
   selectedCompany: Company | null;
   onSelectCompany: (company: Company | null) => void;
+  companies: Company[];
 }
 
-const GstLookup = ({ selectedCompany, onSelectCompany }: GstLookupProps) => {
+const GstLookup = ({ selectedCompany, onSelectCompany, companies }: GstLookupProps) => {
   const [gstNo, setGstNo] = useState('');
   const [error, setError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -36,16 +37,18 @@ const GstLookup = ({ selectedCompany, onSelectCompany }: GstLookupProps) => {
     }
 
     setIsSearching(true);
-    
+
     // Simulate API call
     setTimeout(() => {
-      const company = companies.find(c => c.gstNo === formattedGst);
+      const company = companies.find((c) => c.gstNo === formattedGst);
+
       if (company) {
         onSelectCompany(company);
       } else {
         setError('Company not found. Please verify the GST number.');
         onSelectCompany(null);
       }
+
       setIsSearching(false);
     }, 500);
   };
@@ -141,20 +144,22 @@ const GstLookup = ({ selectedCompany, onSelectCompany }: GstLookupProps) => {
 
         <div className="text-xs text-muted-foreground">
           <p>Sample GST Numbers for testing:</p>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {companies.slice(0, 3).map(c => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  setGstNo(c.gstNo);
-                  setError('');
-                }}
-                className="font-mono text-primary hover:underline"
-              >
-                {c.gstNo}
-              </button>
-            ))}
-          </div>
+          {companies.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {companies.slice(0, 3).map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setGstNo(c.gstNo);
+                    setError('');
+                  }}
+                  className="font-mono text-primary hover:underline"
+                >
+                  {c.gstNo}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -9,12 +9,20 @@ import InvoiceSummary from '@/components/InvoiceSummary';
 import InvoiceOptions, { InvoiceOptionsData } from '@/components/InvoiceOptions';
 import InvoicePdf from '@/components/InvoicePdf';
 import AddCompanyDialog from '@/components/AddCompanyDialog';
-import { inventoryItems, InventoryItem, Company, InvoiceItem, generateInvoiceNumber } from '@/data/mockData';
+import {
+  inventoryItems,
+  companies as defaultCompanies,
+  InventoryItem,
+  Company,
+  InvoiceItem,
+  generateInvoiceNumber,
+} from '@/data/mockData';
 import { FileDown, RotateCcw, Receipt, Sparkles } from 'lucide-react';
 
 const Index = () => {
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companies, setCompanies] = useState<Company[]>(defaultCompanies);
   const [isGenerating, setIsGenerating] = useState(false);
   const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOptionsData>({
     paymentTerms: '30days',
@@ -87,6 +95,8 @@ const Index = () => {
   }, []);
 
   const handleAddCompany = (company: Company) => {
+    // Add new company to the list so GST search can find it
+    setCompanies((prev) => [...prev, company]);
     setSelectedCompany(company);
   };
 
@@ -246,7 +256,8 @@ const Index = () => {
             {/* Customer Details */}
             <GstLookup 
               selectedCompany={selectedCompany} 
-              onSelectCompany={setSelectedCompany} 
+              onSelectCompany={setSelectedCompany}
+              companies={companies}
             />
 
             {/* Invoice Items */}
