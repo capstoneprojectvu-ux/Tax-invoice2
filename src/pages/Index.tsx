@@ -17,9 +17,12 @@ import {
   InvoiceItem,
   generateInvoiceNumber,
 } from '@/data/mockData';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { FileDown, RotateCcw, Receipt, Sparkles } from 'lucide-react';
 
 const Index = () => {
+  const { user } = useAuthStore();
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [companies, setCompanies] = useState<Company[]>(() => {
@@ -50,6 +53,86 @@ const Index = () => {
       // Ignore storage errors (e.g., private mode / quota exceeded)
     }
   }, [companies]);
+
+  // Load companies from Supabase for the logged-in user
+  useEffect(() => {
+    const loadCompaniesFromSupabase = async () => {
+      if (!user) {
+        // If somehow not logged in, fall back to defaults/local storage
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error loading companies from Supabase:', error);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          // Optional: seed Supabase with default companies for first-time use
+          const { data: seeded, error: seedError } = await supabase
+            .from('companies')
+            .insert(
+              defaultCompanies.map((c) => ({
+                user_id: user.id,
+                gst_no: c.gstNo,
+                name: c.name,
+                address: c.address,
+                state: c.state,
+                state_code: c.stateCode,
+                pending_amount: c.pendingAmount,
+                last_transaction: c.lastTransaction
+                  ? new Date(c.lastTransaction).toISOString()
+                  : null,
+              })),
+            )
+            .select('*');
+
+          if (seedError || !seeded) {
+            console.error('Error seeding default companies to Supabase:', seedError);
+            return;
+          }
+
+          setCompanies(
+            seeded.map((row) => ({
+              id: row.id as string,
+              gstNo: row.gst_no as string,
+              name: row.name as string,
+              address: (row.address as string) || '',
+              state: (row.state as string) || '',
+              stateCode: (row.state_code as string) || '',
+              pendingAmount: Number(row.pending_amount || 0),
+              lastTransaction: row.last_transaction as string | undefined,
+            })),
+          );
+          return;
+        }
+
+        // Map Supabase rows into Company type
+        setCompanies(
+          data.map((row) => ({
+            id: row.id as string,
+            gstNo: row.gst_no as string,
+            name: row.name as string,
+            address: (row.address as string) || '',
+            state: (row.state as string) || '',
+            stateCode: (row.state_code as string) || '',
+            pendingAmount: Number(row.pending_amount || 0),
+            lastTransaction: row.last_transaction as string | undefined,
+          })),
+        );
+      } catch (err) {
+        console.error('Unexpected error loading companies from Supabase:', err);
+      }
+    };
+
+    void loadCompaniesFromSupabase();
+  }, [user]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOptionsData>({
     paymentTerms: '30days',
@@ -122,9 +205,67 @@ const Index = () => {
   }, []);
 
   const handleAddCompany = (company: Company) => {
-    // Add new company to the list so GST search can find it
-    setCompanies((prev) => [...prev, company]);
-    setSelectedCompany(company);
+    if (!user) {
+      toast({
+        title: 'Not logged in',
+        description: 'Please log in again to save companies.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Save company to Supabase so it is shared across devices for this user
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .insert({
+            user_id: user.id,
+            gst_no: company.gstNo,
+            name: company.name,
+            address: company.address,
+            state: company.state,
+            state_code: company.stateCode,
+            pending_amount: company.pendingAmount,
+            last_transaction: company.lastTransaction
+              ? new Date(company.lastTransaction).toISOString()
+              : null,
+          })
+          .select('*')
+          .single();
+
+        if (error || !data) {
+          console.error('Error saving company to Supabase:', error);
+          toast({
+            title: 'Error saving company',
+            description: error?.message || 'Could not save company to database.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const savedCompany: Company = {
+          id: data.id as string,
+          gstNo: data.gst_no as string,
+          name: data.name as string,
+          address: (data.address as string) || '',
+          state: (data.state as string) || '',
+          stateCode: (data.state_code as string) || '',
+          pendingAmount: Number(data.pending_amount || 0),
+          lastTransaction: data.last_transaction as string | undefined,
+        };
+
+        setCompanies((prev) => [...prev, savedCompany]);
+        setSelectedCompany(savedCompany);
+      } catch (err: any) {
+        console.error('Unexpected error saving company to Supabase:', err);
+        toast({
+          title: 'Error saving company',
+          description: err?.message || 'Unexpected error while saving company.',
+          variant: 'destructive',
+        });
+      }
+    })();
   };
 
   const handleClearInvoice = () => {
