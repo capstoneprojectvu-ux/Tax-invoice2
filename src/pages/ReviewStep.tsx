@@ -107,6 +107,8 @@ const ReviewStep = () => {
   }, 0);
 
   const grandTotal = taxableTotal + gstTotal;
+  const previousBalance = company?.pendingAmount ?? 0;
+  const totalPayable = previousBalance + grandTotal;
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,9 +190,17 @@ const ReviewStep = () => {
                   <span className="font-mono">₹{gstTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 mt-1">
-                  <span className="font-semibold">Grand Total</span>
+                  <span className="text-muted-foreground">Invoice Total</span>
+                  <span className="font-mono">₹{grandTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Previous Balance</span>
+                  <span className="font-mono">₹{previousBalance.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-semibold">Total Payable</span>
                   <span className="font-mono font-bold text-primary">
-                    ₹{grandTotal.toFixed(2)}
+                    ₹{totalPayable.toFixed(2)}
                   </span>
                 </div>
               </CardContent>

@@ -161,6 +161,15 @@ const CustomerStep = () => {
                   placeholder="Type customer name or GST number, then use ↓ / ↑ and Enter"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const first = filtered[0];
+                      if (first) {
+                        handleSelect(first);
+                      }
+                    }
+                  }}
                 />
                 <div className="max-h-[360px] overflow-y-auto rounded border bg-card">
                   {filtered.length === 0 ? (
