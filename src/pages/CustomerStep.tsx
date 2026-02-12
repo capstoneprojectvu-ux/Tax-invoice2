@@ -21,6 +21,7 @@ const CustomerStep = () => {
     if (!user) return;
 
     const load = async () => {
+      let cloudCompanies: Company[] = [];
       try {
         const { data, error } = await supabase
           .from('companies')
@@ -28,10 +29,8 @@ const CustomerStep = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
-        if (error || !data) return;
-
-        setAllCompanies(
-          data.map((row) => ({
+        if (!error && data) {
+          cloudCompanies = data.map((row) => ({
             id: row.id as string,
             gstNo: row.gst_no as string,
             name: row.name as string,
@@ -41,10 +40,35 @@ const CustomerStep = () => {
             pendingAmount: Number(row.pending_amount || 0),
             lastTransaction: row.last_transaction as string | undefined,
             phone: (row.phone as string) || undefined,
-          })),
-        );
-      } catch {
-        // Ignore; fall back to defaults
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading companies from Supabase:', err);
+      }
+
+      // Load from localStorage as fallback/complement
+      let localCompanies: Company[] = [];
+      try {
+        const stored = localStorage.getItem('tax-invoice-companies');
+        if (stored) {
+          localCompanies = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.error('Error loading companies from localStorage:', err);
+      }
+
+      // Merge and deduplicate
+      const combined = [...cloudCompanies, ...localCompanies];
+      const seen = new Set();
+      const unique = combined.filter(c => {
+        if (seen.has(c.id) || seen.has(c.gstNo)) return false;
+        seen.add(c.id);
+        seen.add(c.gstNo);
+        return true;
+      });
+
+      if (unique.length > 0) {
+        setAllCompanies(unique);
       }
     };
 
@@ -114,6 +138,11 @@ const CustomerStep = () => {
           pendingAmount: Number(data.pending_amount || 0),
           lastTransaction: data.last_transaction as string | undefined,
         };
+
+        // Save to localStorage too
+        const stored = localStorage.getItem('tax-invoice-companies');
+        const localCompanies = stored ? JSON.parse(stored) : [];
+        localStorage.setItem('tax-invoice-companies', JSON.stringify([...localCompanies, saved]));
 
         setAllCompanies((prev) => [...prev, saved]);
         setCompany(saved);

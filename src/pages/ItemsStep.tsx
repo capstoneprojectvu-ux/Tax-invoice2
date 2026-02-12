@@ -23,11 +23,12 @@ const ItemsStep = () => {
     }
   }, [items.length, reset]);
 
-  // Load inventory items from Supabase for this user so new items persist across browsers
+  // Load inventory items from Supabase and localStorage for this user so new items persist
   useEffect(() => {
     const loadInventory = async () => {
       if (!user) return;
 
+      let cloudItems: InventoryItem[] = [];
       try {
         const { data, error } = await supabase
           .from('inventory_items')
@@ -35,13 +36,8 @@ const ItemsStep = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
-        if (error) {
-          console.error('Error loading inventory items for wizard:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const mapped: InventoryItem[] = data.map((row: any) => ({
+        if (!error && data) {
+          cloudItems = data.map((row: any) => ({
             id: row.id as string,
             name: row.name as string,
             hsn: row.hsn as string,
@@ -50,10 +46,33 @@ const ItemsStep = () => {
             unit: row.unit as string,
             gstRate: Number(row.gst_rate || 0),
           }));
-          setInventory(mapped);
         }
       } catch (err) {
-        console.error('Unexpected error loading inventory items for wizard:', err);
+        console.error('Error loading inventory items from Supabase:', err);
+      }
+
+      // Load from localStorage as fallback/complement
+      let localItems: InventoryItem[] = [];
+      try {
+        const stored = localStorage.getItem('tax-invoice-inventory');
+        if (stored) {
+          localItems = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.error('Error loading inventory from localStorage:', err);
+      }
+
+      // Merge and deduplicate
+      const combined = [...cloudItems, ...localItems];
+      const seen = new Set();
+      const unique = combined.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+
+      if (unique.length > 0) {
+        setInventory(unique);
       }
     };
 
@@ -178,6 +197,11 @@ const ItemsStep = () => {
           unit: data.unit as string,
           gstRate: Number(data.gst_rate || 0),
         };
+
+        // Save to localStorage too
+        const stored = localStorage.getItem('tax-invoice-inventory');
+        const localItems = stored ? JSON.parse(stored) : [];
+        localStorage.setItem('tax-invoice-inventory', JSON.stringify([...localItems, saved]));
 
         setInventory((prev) => [...prev, saved]);
       } catch (err) {

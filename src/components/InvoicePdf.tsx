@@ -5,7 +5,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 interface InvoiceItem {
   slNo: number;
   description: string;
-  hsnSac: string;
+  hsn: string;
   quantity: string;
   rate: number;
   unit: string;
@@ -86,6 +86,10 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 14,
     textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 8,
     borderBottom: '1px solid #000',
     fontFamily: 'Helvetica-Bold',
@@ -251,8 +255,8 @@ const InvoicePdf: React.FC<InvoicePdfProps> = ({
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text>
-              Tax Invoice <Text style={styles.headerSubtext}>(ORIGINAL FOR RECIPIENT)</Text>
+            <Text style={{ textAlign: 'center' }}>
+              Tax Invoice - <Text style={styles.headerSubtext}>(ORIGINAL FOR RECIPIENT)</Text>
             </Text>
           </View>
 
@@ -319,18 +323,20 @@ const InvoicePdf: React.FC<InvoicePdfProps> = ({
             <View style={styles.tableSection}>
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableHeaderCell, { width: '8%' }]}>SL</Text>
-                <Text style={[styles.tableHeaderCell, { width: '32%' }]}>Description</Text>
-                <Text style={[styles.tableHeaderCell, { width: '12%' }]}>Qty</Text>
-                <Text style={[styles.tableHeaderCell, { width: '12%' }]}>Rate</Text>
-                <Text style={[styles.tableHeaderCell, { width: '18%' }]}>Amount</Text>
+                <Text style={[styles.tableHeaderCell, { width: '30%' }]}>Description</Text>
+                <Text style={[styles.tableHeaderCell, { width: '12%' }]}>HSN</Text>
+                <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Qty</Text>
+                <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Rate</Text>
+                <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Amount</Text>
               </View>
               {items.map((item, idx) => (
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { width: '8%' }]}>{item.slNo || idx + 1}</Text>
-                  <Text style={[styles.tableCell, { width: '32%' }]}>{item.description || ''}</Text>
-                  <Text style={[styles.tableCell, { width: '12%' }]}>{item.quantity || '0'}</Text>
-                  <Text style={[styles.tableCell, { width: '12%' }]}>{item.rate || 0}</Text>
-                  <Text style={[styles.tableCell, { width: '18%' }]}>{item.amount || 0}</Text>
+                  <Text style={[styles.tableCell, { width: '30%' }]}>{item.description || ''}</Text>
+                  <Text style={[styles.tableCell, { width: '12%' }]}>{item.hsn || ''}</Text>
+                  <Text style={[styles.tableCell, { width: '10%' }]}>{item.quantity || '0'}</Text>
+                  <Text style={[styles.tableCell, { width: '15%' }]}>{item.rate || 0}</Text>
+                  <Text style={[styles.tableCell, { width: '15%' }]}>{item.amount || 0}</Text>
                 </View>
               ))}
             </View>
