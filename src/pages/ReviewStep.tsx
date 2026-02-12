@@ -43,14 +43,14 @@ const ReviewStep = () => {
     const base = i.item.rate * i.quantity;
     const discount = (base * i.discount) / 100;
     const taxable = base - discount;
-    return sum + (taxable * i.item.gstRate) / 100;
+    return sum + (taxable * (i.item.gstRate || 18)) / 100;
   }, 0);
 
   const grandTotal = taxableTotal + gstTotal;
   const previousBalance = company?.pendingAmount ?? 0;
   const totalPayable = previousBalance + grandTotal;
 
-  // ✅ NOW grandTotal is defined and available
+  // ✅ NOW grandTotal is defined
   const handleGeneratePdf = async () => {
     if (!company || items.length === 0) return;
 
@@ -84,42 +84,48 @@ const ReviewStep = () => {
 
     setIsGenerating(true);
     try {
-      // ✅ FIX: Only pass available data
+      // ✅ SAFE DATA MAPPING
       const blob = await pdf(
         <InvoicePdf
           company={{
-            name: sellerInfo.name,
-            address: sellerInfo.address || [],
-            gstin: sellerInfo.gstNo,
-            state: sellerInfo.state,
-            stateCode: sellerInfo.stateCode,
-            contact: sellerInfo.contact || [],
-            email: sellerInfo.email || '',
-            website: sellerInfo.website || '',
+            name: sellerInfo?.name || 'Company',
+            address: Array.isArray(sellerInfo?.address) ? sellerInfo.address : (sellerInfo?.address ? [sellerInfo.address] : []),
+            gstin: sellerInfo?.gstNo || '',
+            state: sellerInfo?.state || '',
+            stateCode: sellerInfo?.stateCode || '',
+            contact: Array.isArray(sellerInfo?.contact) ? sellerInfo.contact : [],
+            email: sellerInfo?.email || '',
+            website: sellerInfo?.website || '',
           }}
           buyer={{
-            name: company.name,
-            address: [company.address],
-            gstin: company.gstNo,
+            name: company?.name || '',
+            address: Array.isArray(company?.address) ? company.address : (company?.address ? [company.address] : []),
+            gstin: company?.gstNo || '',
             pan: '',
-            state: company.state,
-            stateCode: company.stateCode,
-            placeOfSupply: company.state,
+            state: company?.state || '',
+            stateCode: company?.stateCode || '',
+            placeOfSupply: company?.state || '',
           }}
           invoiceDetails={{
-            invoiceNo: invoiceNumber,
-            invoiceDate: invoiceDate,
-            modeOfPayment: options.modeOfPayment || 'Cash',
+            invoiceNo: invoiceNumber || '',
+            invoiceDate: invoiceDate || '',
+            modeOfPayment: options?.modeOfPayment || 'Cash',
           }}
-          items={items.map((item, idx) => ({
-            slNo: idx + 1,
-            description: item.item.name,
-            hsnSac: '',
-            quantity: item.quantity.toString(),
-            rate: item.item.rate,
-            unit: item.item.unit,
-            amount: (item.item.rate * item.quantity) - ((item.item.rate * item.quantity * item.discount) / 100),
-          }))}
+          items={items.map((item, idx) => {
+            const base = item.item.rate * item.quantity;
+            const discountAmount = (base * item.discount) / 100;
+            const amount = base - discountAmount;
+            
+            return {
+              slNo: idx + 1,
+              description: item.item.name || '',
+              hsnSac: item.item.hsnSac || '',
+              quantity: String(item.quantity || 0),
+              rate: item.item.rate || 0,
+              unit: item.item.unit || '',
+              amount: isNaN(amount) ? 0 : amount,
+            };
+          })}
           igstRate={18}
           previousBalance={previousBalance}
           bankDetails={{
@@ -128,7 +134,7 @@ const ReviewStep = () => {
             accountNo: '',
             branchAndIFSC: '',
           }}
-          notes={options.notes || ''}
+          notes={options?.notes || ''}
         />,
       ).toBlob();
 
@@ -174,7 +180,7 @@ const ReviewStep = () => {
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <p className="text-xs text-muted-foreground">
-                  Seller: {sellerInfo.name} ({sellerInfo.gstNo})
+                  Seller: {sellerInfo?.name} ({sellerInfo?.gstNo})
                 </p>
                 {company && (
                   <div className="space-y-1 mt-2">
@@ -259,7 +265,7 @@ const ReviewStep = () => {
                   </span>
                   <input
                     className="border rounded px-2 py-1 text-xs"
-                    value={options.transportMode}
+                    value={options?.transportMode || ''}
                     onChange={(e) =>
                       setOptions({ ...options, transportMode: e.target.value })
                     }
@@ -271,7 +277,7 @@ const ReviewStep = () => {
                   </span>
                   <input
                     className="border rounded px-2 py-1 text-xs uppercase"
-                    value={options.vehicleNo}
+                    value={options?.vehicleNo || ''}
                     onChange={(e) =>
                       setOptions({
                         ...options,
@@ -286,7 +292,7 @@ const ReviewStep = () => {
                   </span>
                   <textarea
                     className="border rounded px-2 py-1 text-xs min-h-[70px] resize-none"
-                    value={options.notes}
+                    value={options?.notes || ''}
                     onChange={(e) =>
                       setOptions({ ...options, notes: e.target.value })
                     }
