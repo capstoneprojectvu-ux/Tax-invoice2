@@ -21,7 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { FileDown, RotateCcw, Receipt, Sparkles } from 'lucide-react';
 
-const INVENTORY_MANAGEMENT_ENABLED = true;
+const INVENTORY_MANAGEMENT_ENABLED = false;
 
 const Index = () => {
   const { user } = useAuthStore();
