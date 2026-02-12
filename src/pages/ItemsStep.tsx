@@ -29,9 +29,11 @@ const ItemsStep = () => {
         setItems(nextItems);
       } else {
         const newId = `wizard-${Date.now()}`;
+        // Clone inventory item so we can override rate per invoice line
+        const itemCopy: InventoryItem = { ...item, rate: 0 };
         const newItem: InvoiceItem = {
           id: newId,
-          item,
+          item: itemCopy,
           quantity: 1,
           discount: 0,
         };
@@ -111,11 +113,17 @@ const ItemsStep = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Input
+                  id="item-search"
                   autoFocus
                   placeholder="Type item name, press Enter to add first match"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.shiftKey) {
+                      e.preventDefault();
+                      goNext();
+                      return;
+                    }
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       const first = filteredItems[0];
@@ -222,12 +230,69 @@ const ItemsStep = () => {
                                     if (e.key === 'Delete') {
                                       e.preventDefault();
                                       handleRemoveItem(row.id);
+                                      return;
+                                    }
+                                    if (e.key === 'Enter' && e.shiftKey) {
+                                      e.preventDefault();
+                                      goNext();
+                                      return;
+                                    }
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const rateEl =
+                                        document.querySelector<HTMLInputElement>(
+                                          `[data-rate-for="${row.id}"]`,
+                                        );
+                                      rateEl?.focus();
+                                      rateEl?.select();
                                     }
                                   }}
                                 />
                               </td>
-                              <td className="py-1 text-right font-mono">
-                                {row.item.rate.toFixed(2)}
+                              <td className="py-1 text-right align-middle">
+                                <input
+                                  className="w-20 border rounded px-1 py-0.5 text-right text-xs font-mono"
+                                  type="number"
+                                  min={0}
+                                  data-rate-for={row.id}
+                                  value={
+                                    Number.isNaN(row.item.rate)
+                                      ? ''
+                                      : row.item.rate
+                                  }
+                                  onChange={(e) => {
+                                    const nextRate = parseFloat(e.target.value);
+                                    setItems(
+                                      items.map((i) =>
+                                        i.id === row.id
+                                          ? {
+                                              ...i,
+                                              item: {
+                                                ...i.item,
+                                                rate: Number.isNaN(nextRate)
+                                                  ? 0
+                                                  : nextRate,
+                                              },
+                                            }
+                                          : i,
+                                      ),
+                                    );
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.shiftKey) {
+                                      e.preventDefault();
+                                      goNext();
+                                      return;
+                                    }
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const searchEl =
+                                        document.getElementById('item-search');
+                                      searchEl?.focus();
+                                      (searchEl as HTMLInputElement | null)?.select?.();
+                                    }
+                                  }}
+                                />
                               </td>
                               <td className="py-1 text-right font-mono">
                                 {amount.toFixed(2)}

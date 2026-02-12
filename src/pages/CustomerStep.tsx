@@ -222,13 +222,10 @@ const CustomerStep = () => {
                 ) : (
                   <div className="space-y-1 text-sm">
                     <p className="font-semibold">{company.name}</p>
-                    <p className="text-muted-foreground">{company.address}</p>
                     <p className="text-muted-foreground">
-                      {company.state} ({company.stateCode})
+                      Contact: <span className="font-mono text-xs">N/A</span>
                     </p>
-                    <p className="font-mono text-xs mt-1">
-                      GSTIN: {company.gstNo}
-                    </p>
+                    <p className="text-muted-foreground">{company.address}</p>
                   </div>
                 )}
               </CardContent>
