@@ -119,7 +119,7 @@ const ReviewStep = () => {
             return {
               slNo: idx + 1,
               description: item.item.name || '',
-              hsn: item.item.hsn || '',
+              hsnSac: item.item.hsnSac || '',
               quantity: String(item.quantity || 0),
               rate: item.item.rate || 0,
               unit: item.item.unit || '',
