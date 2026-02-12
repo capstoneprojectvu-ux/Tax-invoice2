@@ -92,9 +92,6 @@ const CustomerStep = () => {
             last_transaction: c.lastTransaction
               ? new Date(c.lastTransaction).toISOString()
               : null,
-            // phone column is optional in DB; if it does not exist this will error
-            // and we will fall back to in-memory storage.
-            phone: c.phone,
           })
           .select('*')
           .single();
