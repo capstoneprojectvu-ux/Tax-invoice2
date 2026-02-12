@@ -32,6 +32,25 @@ const ReviewStep = () => {
     [],
   );
 
+  // ✅ CALCULATE TOTALS FIRST (BEFORE handleGeneratePdf function)
+  const taxableTotal = items.reduce((sum, i) => {
+    const base = i.item.rate * i.quantity;
+    const discount = (base * i.discount) / 100;
+    return sum + (base - discount);
+  }, 0);
+
+  const gstTotal = items.reduce((sum, i) => {
+    const base = i.item.rate * i.quantity;
+    const discount = (base * i.discount) / 100;
+    const taxable = base - discount;
+    return sum + (taxable * i.item.gstRate) / 100;
+  }, 0);
+
+  const grandTotal = taxableTotal + gstTotal;
+  const previousBalance = company?.pendingAmount ?? 0;
+  const totalPayable = previousBalance + grandTotal;
+
+  // ✅ NOW grandTotal is defined and available for this function
   const handleGeneratePdf = async () => {
     if (!company || items.length === 0) return;
 
@@ -92,23 +111,6 @@ const ReviewStep = () => {
       setIsGenerating(false);
     }
   };
-
-  const taxableTotal = items.reduce((sum, i) => {
-    const base = i.item.rate * i.quantity;
-    const discount = (base * i.discount) / 100;
-    return sum + (base - discount);
-  }, 0);
-
-  const gstTotal = items.reduce((sum, i) => {
-    const base = i.item.rate * i.quantity;
-    const discount = (base * i.discount) / 100;
-    const taxable = base - discount;
-    return sum + (taxable * i.item.gstRate) / 100;
-  }, 0);
-
-  const grandTotal = taxableTotal + gstTotal;
-  const previousBalance = company?.pendingAmount ?? 0;
-  const totalPayable = previousBalance + grandTotal;
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,7 +262,7 @@ const ReviewStep = () => {
                 <div className="space-y-0.5">
                   <p className="font-medium">Ready to print</p>
                   <p className="text-xs text-muted-foreground">
-                    Press Enter on “Download PDF” to generate the invoice.
+                    Press Enter on "Download PDF" to generate the invoice.
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -290,4 +292,3 @@ const ReviewStep = () => {
 };
 
 export default ReviewStep;
-
